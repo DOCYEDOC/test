@@ -26,7 +26,6 @@ def load_thread_id():
 async def create_or_load_thread():
     thread_id = load_thread_id()
     if thread_id:
-        # Try to retrieve the existing thread to check if it's still valid
         try:
             thread = client.beta.threads.retrieve(thread_id=thread_id)
             if thread:
@@ -34,7 +33,6 @@ async def create_or_load_thread():
         except:
             print("Existing thread is invalid, creating a new one.")
 
-    # Create a new thread if the existing one is invalid or doesn't exist
     new_thread = client.beta.threads.create()
     save_thread_id(new_thread.id)
     return new_thread
