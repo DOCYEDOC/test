@@ -3,7 +3,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import pyautogui as p
 import time
-import re
+from event_handler import EventHandler
+import asyncio
 
 load_dotenv()
 client = OpenAI(api_key=os.environ.get('OPENAI_KEY'))
@@ -55,7 +56,7 @@ async def get_response(content, thread):
         purpose="vision"
     )
     
-    message = client.beta.threads.messages.create(
+    client.beta.threads.messages.create(
         thread_id=thread.id,
         role='user',
         content=[
@@ -64,25 +65,22 @@ async def get_response(content, thread):
         ]
     )
 
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id=assistant.id,
-    )
+    event_handler = EventHandler()
 
-    run = await wait_on_run(run, thread)
-    
-    messages = client.beta.threads.messages.list(
-        thread_id=thread.id, order="asc", after=message.id
-    )
-    response_text = ""
-    for message in messages:
-        for c in message.content:
-            response_text += c.text.value
-    clean_text = re.sub('【.*?】', '', response_text)
-    return clean_text
+    with client.beta.threads.runs.stream(
+                thread_id=thread.id,
+                assistant_id=assistant.id,
+                event_handler=event_handler,
+            ) as stream:
+                stream.until_done()
 
-while True:
-    thread = create_or_load_thread()
-    user_message = input("입력: ")
-    gpt_reply = get_response(user_message, thread)
-    print(f"출력: {gpt_reply}")
+    return "".join(event_handler.response_data)
+
+async def main():
+    while True:
+        thread = await create_or_load_thread()
+        user_message = input("입력: ")
+        await get_response(user_message, thread)
+
+if __name__ == "__main__":
+    asyncio.run(main())
