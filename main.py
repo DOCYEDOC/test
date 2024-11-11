@@ -81,6 +81,7 @@ async def main():
         thread = await create_or_load_thread()
         user_message = input("입력: ")
         await get_response(user_message, thread)
+        print("\n")
 
 if __name__ == "__main__":
     asyncio.run(main())

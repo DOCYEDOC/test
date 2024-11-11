@@ -2,3 +2,4 @@
 .venv
 chat_histories
 screenshot.png
+__pycache__
